@@ -9,12 +9,19 @@ const Intervention = require('../models/Intervention');
 exports.getStudents = async (req, res, next) => {
   try {
     const { department, semester, riskLevel, search, limit = 100, page = 1 } = req.query;
+    const isAdmin = req.user.role === 'ADMIN';
 
     let query = {};
 
+    // Faculty can only see students in their own department unless they explicitly
+    // filter to a different dept (admin can filter freely across all departments)
     if (department && department !== 'ALL') {
       query.department = department;
+    } else if (!isAdmin) {
+      // Default scope: faculty sees only their department
+      query.department = req.user.department;
     }
+
     if (semester && semester !== 'ALL') {
       query.semester = semester;
     }

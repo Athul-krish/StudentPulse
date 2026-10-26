@@ -7,10 +7,14 @@ const RiskAssessment = require('../models/RiskAssessment');
 // @access  Private
 exports.getDashboardSummary = async (req, res, next) => {
   try {
-    const totalStudents = await Student.countDocuments();
-    const highRisk = await Student.countDocuments({ latestRiskLevel: 'HIGH' });
-    const mediumRisk = await Student.countDocuments({ latestRiskLevel: 'MEDIUM' });
-    const lowRisk = await Student.countDocuments({ latestRiskLevel: 'LOW' });
+    // If the logged-in user is FACULTY, scope to their department; ADMIN sees all
+    const isAdmin = req.user.role === 'ADMIN';
+    const deptFilter = isAdmin ? {} : { department: req.user.department };
+
+    const totalStudents = await Student.countDocuments(deptFilter);
+    const highRisk = await Student.countDocuments({ ...deptFilter, latestRiskLevel: 'HIGH' });
+    const mediumRisk = await Student.countDocuments({ ...deptFilter, latestRiskLevel: 'MEDIUM' });
+    const lowRisk = await Student.countDocuments({ ...deptFilter, latestRiskLevel: 'LOW' });
 
     const activeInterventions = await Intervention.countDocuments({
       status: { $in: ['Planned', 'In Progress', 'Monitoring'] }
@@ -21,14 +25,14 @@ exports.getDashboardSummary = async (req, res, next) => {
       followUpDate: { $lte: new Date() }
     });
 
-    // Top students requiring immediate attention
-    const studentsRequiringAttention = await Student.find({ latestRiskLevel: { $in: ['HIGH', 'MEDIUM'] } })
+    // All students in this faculty's department (or all for admin), sorted by risk score
+    const studentsList = await Student.find(deptFilter)
       .sort({ latestRiskScore: -1 })
-      .limit(10);
+      .limit(20);
 
-    // Fetch latest assessment top factor for each attention student
+    // Fetch latest assessment top factor for each student
     const attentionData = await Promise.all(
-      studentsRequiringAttention.map(async (st) => {
+      studentsList.map(async (st) => {
         const assessment = await RiskAssessment.findOne({ studentId: st._id }).sort({ assessmentDate: -1 });
         const topFactor = assessment && assessment.contributingFactors && assessment.contributingFactors.length > 0
           ? assessment.contributingFactors[0].factor
@@ -64,6 +68,7 @@ exports.getDashboardSummary = async (req, res, next) => {
     next(err);
   }
 };
+
 
 // @desc    Get system operational alerts based on real DB records
 // @route   GET /api/dashboard/alerts

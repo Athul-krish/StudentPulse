@@ -117,7 +117,11 @@ export const Students = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Student Directory</h1>
-          <p className="text-xs text-slate-500 mt-1">Manage institutional student profiles and risk categories</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {user?.role === 'ADMIN'
+              ? 'All students across all departments'
+              : `Students in your department (${user?.department})`}
+          </p>
         </div>
         <button
           onClick={handleOpenAdd}
@@ -129,7 +133,7 @@ export const Students = () => {
       </div>
 
       {/* Filters Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
           <input
@@ -139,21 +143,6 @@ export const Students = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-        </div>
-
-        <div>
-          <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="ALL">All Departments</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Information Technology">Information Technology</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Mechanical">Mechanical</option>
-            <option value="Data Science">Data Science</option>
-          </select>
         </div>
 
         <div>
