@@ -1,0 +1,29 @@
+services:
+  # 1. Main StudentPulse Full-Stack Application (React UI + Express API)
+  - type: web
+    name: studentpulse-web
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: studentpulse-ml
+          property: host
+
+  # 2. Python ML FastAPI Service (Random Forest Dropout Inference)
+  - type: web
+    name: studentpulse-ml
+    runtime: python
+    plan: free
+    rootDir: ml
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
