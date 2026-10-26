@@ -19,15 +19,35 @@ exports.getInterventions = async (req, res, next) => {
       query.studentId = studentId;
     }
 
+    // Role-based department scoping:
+    // Faculty only sees interventions for students within their assigned department
+    const isAdmin = req.user && req.user.role === 'ADMIN';
+    if (!isAdmin && req.user && req.user.department) {
+      const deptStudents = await Student.find({ department: req.user.department }).select('_id');
+      const deptStudentIds = deptStudents.map(s => s._id);
+
+      if (query.studentId) {
+        const matchesDept = deptStudentIds.some(id => id.toString() === query.studentId.toString());
+        if (!matchesDept) {
+          return res.status(200).json({ success: true, count: 0, data: [] });
+        }
+      } else {
+        query.studentId = { $in: deptStudentIds };
+      }
+    }
+
     const interventions = await Intervention.find(query)
       .populate('studentId', 'name studentId department semester latestRiskLevel latestRiskScore')
       .populate('assignedFaculty', 'name email department')
       .sort({ updatedAt: -1, createdAt: -1 });
 
+    // Exclude orphaned interventions where studentId is null
+    const validInterventions = interventions.filter(item => item.studentId != null);
+
     res.status(200).json({
       success: true,
-      count: interventions.length,
-      data: interventions
+      count: validInterventions.length,
+      data: validInterventions
     });
   } catch (err) {
     next(err);
@@ -48,8 +68,8 @@ exports.createIntervention = async (req, res, next) => {
 
     const intervention = await Intervention.create({
       studentId,
-      riskAssessmentId,
-      interventionType,
+      riskAssessmentId: riskAssessmentId || null,
+      interventionType: interventionType || 'Academic Counselling',
       description,
       assignedFaculty: req.user ? req.user._id : null,
       assignedFacultyName: req.user ? req.user.name : 'System Faculty',
@@ -59,7 +79,7 @@ exports.createIntervention = async (req, res, next) => {
 
     const populated = await Intervention.findById(intervention._id)
       .populate('studentId', 'name studentId department semester latestRiskLevel latestRiskScore')
-      .populate('assignedFaculty', 'name email');
+      .populate('assignedFaculty', 'name email department');
 
     res.status(201).json({
       success: true,
@@ -84,7 +104,7 @@ exports.updateIntervention = async (req, res, next) => {
       new: true,
       runValidators: true
     }).populate('studentId', 'name studentId department semester latestRiskLevel latestRiskScore')
-      .populate('assignedFaculty', 'name email');
+      .populate('assignedFaculty', 'name email department');
 
     res.status(200).json({
       success: true,

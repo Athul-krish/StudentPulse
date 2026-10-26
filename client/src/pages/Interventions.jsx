@@ -5,8 +5,10 @@ import { RiskBadge, StatusBadge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { FileCheck2, PlusCircle, Filter, Calendar, CheckSquare, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export const Interventions = () => {
+  const { user } = useAuth();
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -22,6 +24,19 @@ export const Interventions = () => {
     followUpDate: ''
   });
 
+  // Create Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deptStudents, setDeptStudents] = useState([]);
+  const [createFormData, setCreateFormData] = useState({
+    studentId: '',
+    interventionType: 'Academic Counselling',
+    description: '',
+    followUpDate: '',
+    facultyNotes: ''
+  });
+  const [createError, setCreateError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   const fetchInterventions = async () => {
     setLoading(true);
     try {
@@ -36,9 +51,55 @@ export const Interventions = () => {
     }
   };
 
+  const fetchDeptStudents = async () => {
+    try {
+      const res = await API.get('/students');
+      setDeptStudents(res.data.data || []);
+      if (res.data.data && res.data.data.length > 0) {
+        setCreateFormData(prev => ({
+          ...prev,
+          studentId: prev.studentId || res.data.data[0]._id
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to load students for intervention creation:', err);
+    }
+  };
+
   useEffect(() => {
     fetchInterventions();
   }, [statusFilter, typeFilter]);
+
+  const handleOpenCreate = () => {
+    fetchDeptStudents();
+    setCreateFormData({
+      studentId: deptStudents.length > 0 ? deptStudents[0]._id : '',
+      interventionType: 'Academic Counselling',
+      description: '',
+      followUpDate: '',
+      facultyNotes: ''
+    });
+    setCreateError('');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSaveCreate = async (e) => {
+    e.preventDefault();
+    if (!createFormData.studentId) {
+      return setCreateError('Please select a student.');
+    }
+    setSubmitting(true);
+    setCreateError('');
+    try {
+      await API.post('/interventions', createFormData);
+      setIsCreateModalOpen(false);
+      fetchInterventions();
+    } catch (err) {
+      setCreateError(err.response?.data?.error || 'Failed to record intervention.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleOpenEdit = (item) => {
     setEditingIntervention(item);
@@ -79,8 +140,19 @@ export const Interventions = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Intervention Support Board</h1>
-          <p className="text-xs text-slate-500 mt-1">Track faculty support plans, academic progress reviews, and outcome monitoring</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {user?.role === 'ADMIN'
+              ? 'All student support plans across all departments'
+              : `Support interventions for students in your department (${user?.department || 'General'})`}
+          </p>
         </div>
+        <button
+          onClick={handleOpenCreate}
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow-md transition-all self-start sm:self-auto"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Log Intervention</span>
+        </button>
       </div>
 
       {/* Filters */}
@@ -141,7 +213,7 @@ export const Interventions = () => {
                 {interventions.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center py-10 text-slate-400">
-                      No intervention records found.
+                      No intervention records found for your department. Click 'Log Intervention' to record support actions.
                     </td>
                   </tr>
                 ) : (
@@ -172,7 +244,7 @@ export const Interventions = () => {
                           onClick={() => handleOpenEdit(item)}
                           className="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors"
                         >
-                          Update Status / Outcome
+                          Update
                         </button>
                         <button
                           onClick={() => handleDelete(item._id)}
@@ -190,6 +262,107 @@ export const Interventions = () => {
           </div>
         )}
       </Card>
+
+      {/* Log New Intervention Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Log Support Intervention"
+      >
+        {createError && (
+          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+            {createError}
+          </div>
+        )}
+        <form onSubmit={handleSaveCreate} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Select Student *</label>
+            <select
+              required
+              value={createFormData.studentId}
+              onChange={(e) => setCreateFormData({ ...createFormData, studentId: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {deptStudents.length === 0 ? (
+                <option value="">No students available in your department</option>
+              ) : (
+                deptStudents.map(st => (
+                  <option key={st._id} value={st._id}>
+                    {st.name} ({st.studentId}) — Risk: {st.latestRiskLevel} ({st.latestRiskScore}/100)
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Intervention Type *</label>
+            <select
+              value={createFormData.interventionType}
+              onChange={(e) => setCreateFormData({ ...createFormData, interventionType: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Contact Student">Contact Student</option>
+              <option value="Academic Counselling">Academic Counselling</option>
+              <option value="Remedial Classes">Remedial Classes</option>
+              <option value="Faculty Mentoring">Faculty Mentoring</option>
+              <option value="Assignment Support">Assignment Support</option>
+              <option value="Attendance Follow-up">Attendance Follow-up</option>
+              <option value="Performance Monitoring">Performance Monitoring</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Description / Action Plan *</label>
+            <textarea
+              required
+              rows={3}
+              value={createFormData.description}
+              onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
+              placeholder="Outline the discussion, remedial action, or counselling steps..."
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Follow-up Date</label>
+            <input
+              type="date"
+              value={createFormData.followUpDate}
+              onChange={(e) => setCreateFormData({ ...createFormData, followUpDate: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Faculty Notes (Optional)</label>
+            <textarea
+              rows={2}
+              value={createFormData.facultyNotes}
+              onChange={(e) => setCreateFormData({ ...createFormData, facultyNotes: e.target.value })}
+              placeholder="Observations or notes..."
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || deptStudents.length === 0}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md disabled:bg-slate-300"
+            >
+              {submitting ? 'Saving...' : 'Save Intervention'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Edit Status & Outcome Modal */}
       <Modal

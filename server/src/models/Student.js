@@ -22,7 +22,7 @@ const studentSchema = new mongoose.Schema({
   department: {
     type: String,
     required: true,
-    enum: ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Data Science']
+    trim: true
   },
   program: {
     type: String,

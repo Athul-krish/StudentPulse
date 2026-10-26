@@ -7,6 +7,12 @@ import { Modal } from '../components/common/Modal';
 import { Search, UserPlus, Filter, Edit, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const ALL_DEPARTMENTS = [
+  'MCA', 'MBA', 'BCA', 'Computer Science', 'Information Technology',
+  'Data Science', 'Electronics', 'Mechanical', 'B.Com', 'B.Sc Computer Science',
+  'B.Sc Mathematics', 'B.Tech CSE', 'B.Tech ECE', 'General'
+];
+
 export const Students = () => {
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
@@ -23,12 +29,12 @@ export const Students = () => {
     studentId: '',
     name: '',
     email: '',
-    department: 'Computer Science',
-    semester: 'S4',
+    department: user?.department || 'MCA',
+    semester: 'S1',
     program: 'MCA',
-    batch: '2023-2025',
+    batch: '2024-2026',
     phone: '',
-    enrollmentYear: 2023
+    enrollmentYear: 2024
   });
   const [formError, setFormError] = useState('');
 
@@ -52,16 +58,17 @@ export const Students = () => {
 
   const handleOpenAdd = () => {
     setEditingStudent(null);
+    const facultyDept = user?.department || 'MCA';
     setFormData({
       studentId: '',
       name: '',
       email: '',
-      department: 'Computer Science',
-      semester: 'S4',
-      program: 'MCA',
-      batch: '2023-2025',
+      department: facultyDept,
+      semester: 'S1',
+      program: facultyDept === 'MBA' ? 'MBA' : 'MCA',
+      batch: `${new Date().getFullYear()}-${new Date().getFullYear() + 2}`,
       phone: '',
-      enrollmentYear: 2023
+      enrollmentYear: new Date().getFullYear()
     });
     setFormError('');
     setIsModalOpen(true);
@@ -76,9 +83,9 @@ export const Students = () => {
       department: st.department,
       semester: st.semester,
       program: st.program || 'MCA',
-      batch: st.batch || '2023-2025',
+      batch: st.batch || '2024-2026',
       phone: st.phone || '',
-      enrollmentYear: st.enrollmentYear || 2023
+      enrollmentYear: st.enrollmentYear || new Date().getFullYear()
     });
     setFormError('');
     setIsModalOpen(true);
@@ -88,10 +95,16 @@ export const Students = () => {
     e.preventDefault();
     setFormError('');
     try {
+      const payload = {
+        ...formData,
+        department: (user?.role !== 'ADMIN' && user?.department) ? user.department : formData.department,
+        enrollmentYear: Number(formData.enrollmentYear) || new Date().getFullYear()
+      };
+
       if (editingStudent) {
-        await API.put(`/students/${editingStudent._id}`, formData);
+        await API.put(`/students/${editingStudent._id}`, payload);
       } else {
-        await API.post('/students', formData);
+        await API.post('/students', payload);
       }
       setIsModalOpen(false);
       fetchStudents();
@@ -120,7 +133,7 @@ export const Students = () => {
           <p className="text-xs text-slate-500 mt-1">
             {user?.role === 'ADMIN'
               ? 'All students across all departments'
-              : `Students in your department (${user?.department})`}
+              : `Students registered in your department (${user?.department || 'General'})`}
           </p>
         </div>
         <button
@@ -198,7 +211,7 @@ export const Students = () => {
                 {students.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="text-center py-10 text-slate-400">
-                      No student records found matching current search/filters.
+                      No student records found in your department. Click 'Add New Student' to register your first student.
                     </td>
                   </tr>
                 ) : (
@@ -272,7 +285,7 @@ export const Students = () => {
                 disabled={!!editingStudent}
                 value={formData.studentId}
                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                placeholder="e.g. CS2024099"
+                placeholder="e.g. MCA2024001"
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase disabled:bg-slate-100"
               />
             </div>
@@ -297,7 +310,7 @@ export const Students = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="rahul@studentpulse.local"
+                placeholder="rahul@college.edu"
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -316,17 +329,22 @@ export const Students = () => {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Department *</label>
-              <select
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="Computer Science">Computer Science</option>
-                <option value="Information Technology">Information Technology</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Data Science">Data Science</option>
-              </select>
+              {user?.role !== 'ADMIN' ? (
+                <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-between">
+                  <span>{user?.department || formData.department}</span>
+                  <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">Your Dept</span>
+                </div>
+              ) : (
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {ALL_DEPARTMENTS.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Semester *</label>
@@ -349,7 +367,7 @@ export const Students = () => {
                 type="text"
                 value={formData.batch}
                 onChange={(e) => setFormData({ ...formData, batch: e.target.value })}
-                placeholder="2023-2025"
+                placeholder="2024-2026"
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>

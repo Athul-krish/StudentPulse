@@ -96,14 +96,27 @@ exports.getStudentById = async (req, res, next) => {
 // @access  Private
 exports.createStudent = async (req, res, next) => {
   try {
-    const existing = await Student.findOne({ studentId: req.body.studentId.toUpperCase() });
-    if (existing) {
-      return res.status(400).json({ success: false, error: `Student ID '${req.body.studentId}' already exists.` });
+    const studentIdUpper = req.body.studentId ? req.body.studentId.trim().toUpperCase() : '';
+    if (!studentIdUpper) {
+      return res.status(400).json({ success: false, error: 'Student ID is required.' });
     }
+
+    const existing = await Student.findOne({ studentId: studentIdUpper });
+    if (existing) {
+      return res.status(400).json({ success: false, error: `Student ID '${studentIdUpper}' already exists.` });
+    }
+
+    const isAdmin = req.user && req.user.role === 'ADMIN';
+    // If faculty is creating the student, automatically assign to their department
+    const department = (!isAdmin && req.user && req.user.department)
+      ? req.user.department
+      : (req.body.department || 'General');
 
     const student = await Student.create({
       ...req.body,
-      studentId: req.body.studentId.toUpperCase()
+      department,
+      studentId: studentIdUpper,
+      enrollmentYear: Number(req.body.enrollmentYear) || new Date().getFullYear()
     });
 
     res.status(201).json({
