@@ -9,6 +9,55 @@ const generateToken = (id) => {
   });
 };
 
+// @desc    Register a new faculty account
+// @route   POST /api/auth/register
+// @access  Public
+exports.register = async (req, res, next) => {
+  try {
+    const { name, email, password, department } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'Please provide name, email, and password.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters.' });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      passwordHash,
+      role: 'FACULTY',   // Faculty can only self-register as FACULTY
+      department: department || 'General'
+    });
+
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public

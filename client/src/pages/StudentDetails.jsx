@@ -120,12 +120,6 @@ export const StudentDetails = () => {
     RecentPerformance: rec.recentPerformancePercentage
   })).reverse();
 
-  const riskHistoryChartData = (riskHistory || []).map((rh, idx) => ({
-    assessment: `Assessment #${idx + 1}`,
-    date: new Date(rh.assessmentDate).toLocaleDateString(),
-    RiskScore: rh.riskScore
-  }));
-
   return (
     <div className="space-y-6">
       {/* Student Profile Header Banner */}
@@ -237,38 +231,22 @@ export const StudentDetails = () => {
         )}
       </Card>
 
-      {/* Performance & Risk Trend Line Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Academic Indicators Trend" subtitle="Attendance & Marks evolution across semesters">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="Attendance" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="InternalMarks" stroke="#6366f1" strokeWidth={2} />
-                <Line type="monotone" dataKey="Assignments" stroke="#f59e0b" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card title="Risk Score Monitoring History" subtitle="Risk score trajectory over time">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={riskHistoryChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="RiskScore" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+      {/* Academic Indicators Trend Chart */}
+      <Card title="Academic Indicators Trend" subtitle="Attendance & Marks evolution across semesters">
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={trendChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="Attendance" stroke="#10b981" strokeWidth={2} />
+              <Line type="monotone" dataKey="InternalMarks" stroke="#6366f1" strokeWidth={2} />
+              <Line type="monotone" dataKey="Assignments" stroke="#f59e0b" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {/* Intervention History */}
       <Card

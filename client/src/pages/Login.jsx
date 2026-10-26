@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, LogIn, UserCheck, Shield } from 'lucide-react';
+import { ShieldAlert, LogIn, UserCheck } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -23,11 +23,6 @@ export const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
   };
 
   return (
@@ -59,7 +54,7 @@ export const Login = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. faculty@studentpulse.local"
+              placeholder="e.g. faculty@college.edu"
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
             />
           </div>
@@ -92,27 +87,26 @@ export const Login = () => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <p className="text-xs text-slate-500 text-center font-medium mb-3">Quick Demo Login Accounts:</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin@studentpulse.local', 'admin123')}
-              className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-medium transition-colors"
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Admin Demo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('faculty@studentpulse.local', 'faculty123')}
-              className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-medium transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Faculty Demo</span>
-            </button>
-          </div>
+        {/* Quick demo login */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <p className="text-xs text-slate-500 text-center font-medium mb-3">Quick Demo Login:</p>
+          <button
+            type="button"
+            onClick={() => { setEmail('faculty@studentpulse.local'); setPassword('faculty123'); }}
+            className="w-full flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-medium transition-colors"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>Faculty Demo Account</span>
+          </button>
         </div>
+
+        {/* Register link */}
+        <p className="text-center text-xs text-slate-500 mt-5">
+          New faculty member?{' '}
+          <Link to="/register" className="text-indigo-600 hover:underline font-semibold">
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   );

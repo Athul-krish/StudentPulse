@@ -204,10 +204,10 @@ export const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Table: Students Requiring Immediate Attention */}
+      {/* Table: All Students under this Faculty */}
       <Card
-        title="Students Requiring Attention"
-        subtitle="Students identified with elevated risk scores"
+        title="My Students"
+        subtitle="All students in your department, sorted by risk score"
         action={
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -225,9 +225,10 @@ export const Dashboard = () => {
               onChange={(e) => setRiskFilter(e.target.value)}
               className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="ALL">All Risks</option>
+              <option value="ALL">All Risk Levels</option>
               <option value="HIGH">HIGH Risk</option>
               <option value="MEDIUM">MEDIUM Risk</option>
+              <option value="LOW">LOW Risk</option>
             </select>
           </div>
         }
