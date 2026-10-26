@@ -17,7 +17,7 @@ const startServer = async () => {
     console.warn('[SEED WARNING] Auto-seed failed or skipped:', seedErr.message);
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`==================================================`);
     console.log(` STUDENTPULSE BACKEND API IS RUNNING ON PORT ${PORT}`);
     console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);

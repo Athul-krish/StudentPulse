@@ -4,8 +4,8 @@ services:
     name: studentpulse-web
     runtime: node
     plan: free
-    buildCommand: cd client && npm install --include=dev && npm run build && cd ../server && npm install
-    startCommand: node server/src/server.js
+    buildCommand: npm run build
+    startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -13,11 +13,6 @@ services:
         value: 10000
       - key: JWT_SECRET
         generateValue: true
-      - key: ML_SERVICE_URL
-        fromService:
-          type: web
-          name: studentpulse-ml
-          property: host
 
   # 2. Python ML FastAPI Service (Random Forest Dropout Inference)
   - type: web
@@ -25,5 +20,5 @@ services:
     runtime: python
     plan: free
     rootDir: ml
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
