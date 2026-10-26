@@ -4,8 +4,8 @@ services:
     name: studentpulse-web
     runtime: node
     plan: free
-    buildCommand: npm run build
-    startCommand: npm run start:prod
+    buildCommand: cd client && npm install --include=dev && npm run build && cd ../server && npm install
+    startCommand: node server/src/server.js
     envVars:
       - key: NODE_ENV
         value: production

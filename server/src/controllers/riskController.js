@@ -4,7 +4,10 @@ const AcademicRecord = require('../models/AcademicRecord');
 const RiskAssessment = require('../models/RiskAssessment');
 const { generateExplainabilityReport } = require('../utils/explainability');
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+let ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+if (ML_SERVICE_URL && !ML_SERVICE_URL.startsWith('http://') && !ML_SERVICE_URL.startsWith('https://')) {
+  ML_SERVICE_URL = `http://${ML_SERVICE_URL}`;
+}
 
 // Fallback risk calculation if ML service is unreachable
 function calculateFallbackRisk(academicData) {
